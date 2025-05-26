@@ -1,0 +1,2 @@
+- This is the serialized output of the contact graph created by `main.py`.
+- Saved using `nx.write_gpickle()` and loaded later for querying.
