@@ -1,7 +1,11 @@
-```python
 import json
-from collections import defaultdict
 import datetime
+import requests
+import time
+
+# Replace this with your real SerpAPI key
+SERPAPI_KEY = 'YOUR_SERPAPI_KEY'
+SEARCH_URL = 'https://serpapi.com/search.json'
 
 def load_data(*files):
     all_contacts = []
@@ -13,6 +17,35 @@ def load_data(*files):
 
 def normalize_email(email):
     return email.lower().strip() if email else None
+
+def enrich_contact_online(contact):
+    query = f"{contact['name']} {contact.get('email', '')} site:linkedin.com"
+    params = {
+        "q": query,
+        "api_key": SERPAPI_KEY,
+        "num": 1
+    }
+    try:
+        response = requests.get(SEARCH_URL, params=params)
+        data = response.json()
+        snippet = data.get("organic_results", [{}])[0].get("snippet", "")
+        title = data.get("organic_results", [{}])[0].get("title", "")
+
+        if "unknown" in contact.get("tags", []) or not contact.get("tags"):
+            tags = []
+            for word in ["biology", "CS", "startup", "engineer", "research", "Harvard", "Stanford"]:
+                if word.lower() in snippet.lower():
+                    tags.append(word)
+            if tags:
+                contact["tags"] = tags
+
+        if contact.get("profession") in [None, "unknown"] and title:
+            contact["profession"] = title
+
+    except Exception as e:
+        print(f"Error enriching {contact['name']}: {e}")
+    time.sleep(1.5)
+    return contact
 
 def enrich_and_merge(contacts):
     merged = {}
@@ -46,13 +79,11 @@ def enrich_and_merge(contacts):
                 "updated": datetime.datetime.utcnow().isoformat()
             }
 
-    for contact in merged.values():
-        if not contact["tags"]:
-            contact["tags"].append("unknown")
-        if not contact["profession"]:
-            contact["profession"] = "unknown"
+    merged_list = list(merged.values())
 
-    return list(merged.values())
+    # 🔍 Online enrichment for all contacts
+    enriched = [enrich_contact_online(c) for c in merged_list]
+    return enriched
 
 if __name__ == "__main__":
     all_contacts = load_data("contacts_output.json", "gmail_output.json", "linkedin_output.json")
