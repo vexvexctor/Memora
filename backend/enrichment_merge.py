@@ -4,7 +4,7 @@ import requests
 import time
 
 # Replace this with your real SerpAPI key
-SERPAPI_KEY = 'YOUR_SERPAPI_KEY'
+SERPAPI_KEY = '2b92365cefba8c6aecaeed214720a12cc70d3473de109600276e0d330261ec71'
 SEARCH_URL = 'https://serpapi.com/search.json'
 
 def load_data(*files):
